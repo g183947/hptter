@@ -1,0 +1,721 @@
+!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="keywords" content="程序员小明 | Java | Spring Boot | Spring Cloud | ElasticSearch |日常开发 |最新干货分享">
+    <meta name="description" content="Spring Boot, Spring Cloud,日常开发, ElasticSearch, 微服务, 并发编程, 源码分析,Java,程序员小明">
+    <meta name="author" content="小明">
+    
+    <title>
+        
+            RocketMQ消息丢失场景及解决办法 |
+        
+        程序员小明
+    </title>
+    <link rel="stylesheet" href="./pigeonhole1.css">
+    <!-- <link rel="shortcut icon" href="/images/logo.svg">-->
+    <link rel="stylesheet" href="./pigeonhole2.css">
+    <link rel="stylesheet" href="./pigeonhole3.css">
+    <link rel="stylesheet" href="./pigeonhole4.css">
+    <link rel="stylesheet" href="./pigeonhole5.css">
+ <script id="hexo-configurations">
+    let KEEP = window.KEEP || {}
+    KEEP.hexo_config = {"hostname":"mynamecoder.com","root":"/","language":"zh-CN","path":"search.xml"}
+    KEEP.theme_config = {"toc":{"enable":true,"number":false,"expand_all":false,"init_open":false},"style":{"primary_color":"#0066cc","logo":null,"favicon":"/images/logo.svg","avatar":"/images/avatar.png","font_size":null,"font_family":"Optima-Regular,PingFangTC-light","hover":{"shadow":true,"scale":true},"first_screen":{"enable":false,"header_transparent":true,"background_img":"https://img.mynamecoder.com/20230224112801.jpeg","description":"||","font_color":"","hitokoto":true},"scroll":{"progress_bar":false,"percent":false}},"local_search":{"enable":true,"preload":true},"code_copy":{},"code_block":{"tools":{"enable":false,"style":"default"},"highlight_theme":"default"},"side_tools":{},"pjax":{"enable":true},"lazyload":{"enable":true},"comment":{"enable":true,"use":"valine","valine":{"appid":"RYD6fM3F1jQ4aTSXOzbclYi6-9Nh9j0Va","appkey":"mjF7jJLYlbIcPU2mUOoh0I88","server_urls":null,"meta":["nick","mail","link"],"placeholder":"说点什么"},"gitalk":{"github_id":null,"github_admins":null,"repository":null,"client_id":null,"client_secret":null,"proxy":null},"twikoo":{"env_id":null,"region":null,"version":"1.6.8"},"waline":{"server_url":null,"reaction":false,"version":2}},"post":{"author_label":{"enable":true,"auto":true,"custom_label_list":["Trainee","Engineer","Architect"]},"word_count":{"enable":true,"wordcount":false,"min2read":false},"img_align":"left","copyright_info":true},"version":"3.6.1"}
+    KEEP.language_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"}
+    KEEP.language_code_block = {"copy":"复制代码","copied":"已复制","fold":"折叠代码块","folded":"已折叠"}
+    KEEP.language_copy_copyright = {"copy":"复制版权信息","copied":"已复制","title":"原文标题","author":"原文作者","link":"原文链接"}
+  </script>
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1566816837076058"
+     crossorigin="anonymous"></script>
+    <script async src="/live2d-widget/autoload.js"></script>
+<meta name="generator" content="Hexo 5.4.2"><link rel="alternate" href="/atom.xml" title="程序员小明 | Java | Spring Boot | Spring Cloud | ElasticSearch |日常开发 |最新干货分享" type="application/atom+xml">
+</head>
+
+
+<body>
+<div class="progress-bar-container">
+    
+
+    
+        <span class="pjax-progress-bar"></span>
+        <i class="pjax-progress-icon fas fa-circle-notch fa-spin"></i>
+    
+</div>
+<main class="page-container">
+ <div class="page-main-content">
+ <div class="page-main-content-top">
+            
+<header class="header-wrapper">
+
+    <div class="header-content">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+               程序员小明
+            </a>
+        </div>
+
+        <div class="right">
+            <div class="pc">
+                <ul class="menu-list">
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./首页.html"
+                            >
+                                首页
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./归档.html"
+                            >
+                                归档
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./标签.html"
+                            >
+                                标签
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./友链.html"
+                            >
+                                友链
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./关于.html"
+                            >
+                                关于
+                            </a>
+                        </li>
+                        <li class="menu-item">
+                            <a class="" href="/about">添加 </a>
+                          </li>
+                        <li class="menu-item search search-popup-trigger">
+                          <i>🔍</i>
+                        </li>
+                </ul>
+            </div>
+            <div class="mobile">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fas fa-search"></i></div>
+                
+                <div class="icon-item menu-bar">
+                    <div class="menu-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-drawer">
+        <ul class="drawer-menu-list">
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./首页.html">首页</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./归档.html">归档</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./标签.html">标签</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./友链.html">友链</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./关于.html">关于</a>
+                </li>
+            
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+        </div>
+
+        <div class="page-main-content-middle">
+
+            <div class="main-content">
+
+                
+                    <div class="fade-in-down-animation">
+    <div class="post-page-container">
+        <div class="article-content-container">
+
+            <div class="article-title">
+                <span class="title-hover-animation">RocketMQ消息丢失场景及解决办法</span>
+            </div>
+
+            
+                <div class="article-header">
+                    <div class="avatar">
+                        <img src="https://tse4-mm.cn.bing.net/th/id/OIP-C.kQoPYkrKu-rbyFV-CaRE2AHaFj?w=244&h=183&c=7&r=0&o=5&dpr=1.3&pid=1.7">
+                    </div>
+                    <div class="info">
+                        <div class="author">
+                            <span class="name">小明</span>
+                            
+                                <span class="author-label">Lv5</span>
+                            
+                        </div>
+                        <div class="meta-info">
+                            
+<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        
+            <i class="fa-regular fa-calendar-plus">➕</i>&nbsp;
+        
+        <span class="pc">2023-05-30 11:22:10</span>
+        <span class="mobile">2023-05-30 11:22</span>
+    </span>
+    
+        <span class="article-update-date article-meta-item">
+        <i class="fas fa-file-pen">🪄</i>&nbsp;
+        <span class="pc">2023-06-06 09:27:25</span>
+    </span>
+    <span class="article-tags article-meta-item">
+            <i class="fas fa-tags">🏷️</i>&nbsp;
+            <ul>
+                
+                    <li>
+                        <a href="/tags/Java/">Java</a>&nbsp;
+                    </li>
+                
+                    <li>
+                        | <a href="/tags/RocketMQ/">RocketMQ</a>&nbsp;
+                    </li>
+                
+            </ul>
+        </span>
+        <span class="article-pv article-meta-item">
+            <i class="fas fa-eye">👀</i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+ </div>
+                    </div>
+                </div>
+            <div class="article-content keep-markdown-body">
+                <p>既然在项目中使用了MQ，那么就不可避免的需要考虑消息丢失问题。</p>
+<span id="more"></span>
+
+<h2 id="场景分析"><a href="#场景分析" class="headerlink" title="场景分析"></a>场景分析</h2><p>在一些涉及到了金钱交易的场景下，消息丢失还是很致命的。那么在RocketMQ中存在哪几种消息丢失的场景呢？<br>先来一张最简单的消费流程图：<br>
+    <!-- <img  
+                     lazyload
+                     alt="image"
+                     data-src="https://img.mynamecoder.com/20230530173934.png"
+                     
+                > -->
+                <img src="https://ts4.cn.mm.bing.net/th?id=OIP-C.9ZzGMplhZnF_mTJnPQT1HAHaDn&w=350&h=170&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2">
+            </p>
+<p>上图中大致包含了这么几种场景：</p>
+<ul>
+<li>生产者产生消息发送给RocketMQ</li>
+<li>RocketMQ接收到了消息之后，必然需要存到磁盘中，否则断电或宕机之后会造成数据的丢失</li>
+<li>消费者从RocketMQ中获取消息消费，消费成功之后，整个流程结束</li>
+</ul>
+<p>这三种场景都可能会产生消息的丢失，如下图所示：<br>
+    <!-- <img  
+                     lazyload
+                     alt="image"
+                     data-src="https://img.mynamecoder.com/20230530173903.png"
+                     
+                > -->
+                <img src="https://tse4-mm.cn.bing.net/th/id/OIP-C.-5YhovOH5rBMC0mqV7aK6AHaDj?w=333&h=167&c=7&r=0&o=5&dpr=1.3&pid=1.7">
+            </p>
+<p>1、场景1中生产者将消息发送给Rocket MQ的时候，如果出现了网络抖动或者通信异常等问题，消息就有可能会丢失<br>2、场景2中消息需要持久化到磁盘中，这时会有两种情况导致消息丢失</p>
+<ul>
+<li>RocketMQ为了减少磁盘的IO，会先将消息写入到os cache中，而不是直接写入到磁盘中，消费者从os cache中获取消息类似于直接从内存中获取消息，速度更快，过一段时间会由os线程异步的将消息刷入磁盘中，此时才算真正完成了消息的持久化。在这个过程中，如果消息还没有完成异步刷盘，RocketMQ中的Broker宕机的话，就会导致消息丢失</li>
+<li>如果消息已经被刷入了磁盘中，但是数据没有做任何备份，一旦磁盘损坏，那么消息也会丢失<br>3、消费者成功从RocketMQ中获取到了消息，还没有将消息完全消费完的时候，就通知RocketMQ我已经将消息消费了，然后消费者宕机，但是RocketMQ认为消费者已经成功消费了数据，所以数据依旧丢失了。<br>那么如何保证消息的零丢失呢？
+    <!--  <img  
+                     lazyload
+                     alt="image"
+                     data-src="https://img.mynamecoder.com/20230530174115.png"
+                     
+                > -->
+                <img src="https://ts4.cn.mm.bing.net/th?id=OIP-C.9ZzGMplhZnF_mTJnPQT1HAHaDn&w=350&h=170&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2">
+            </li>
+</ul>
+<h2 id="解决方案"><a href="#解决方案" class="headerlink" title="解决方案"></a>解决方案</h2><p>1、场景1中保证消息不丢失的方案是使用RocketMQ自带的事务机制来发送消息，大致流程为：</p>
+<ul>
+<li>首先生产者发送half消息到RocketMQ中，此时消费者是无法消费half消息的，若half消息就发送失败了，则执行相应的回滚逻辑</li>
+<li>half消息发送成功之后，且RocketMQ返回成功响应，则执行生产者的核心链路</li>
+<li>如果生产者自己的核心链路执行失败，则回滚，并通知RocketMQ删除half消息</li>
+<li>如果生产者的核心链路执行成功，则通知RocketMQ commit half消息，让消费者可以消费这条数据</li>
+<li>其中还有一些RocketMQ长时间没有收到生产者是要commit/rollback操作的响应，回调生产者接口的细节，感兴趣的可以参考<a href="https://mynamecoder.com/p/59086.html">《 RocketMQ分布式事务原理》</a><br>在使用了RocketMQ事务将生产者的消息成功发送给RocketMQ，就可以保证在这个阶段消息不会丢失</li>
+</ul>
+<p>2、在场景2中要保证消息不丢失，首先需要将os cache的异步刷盘策略改为同步刷盘，这一步需要修改Broker的配置文件，将flushDiskType改为SYNC_FLUSH同步刷盘策略，默认的是ASYNC_FLUSH异步刷盘。<br>一旦同步刷盘返回成功，那么就一定保证消息已经持久化到磁盘中了；为了保证磁盘损坏不会丢失数据，我们需要对RocketMQ采用主从机构，集群部署，Leader中的数据在多个Follower中都存有备份，防止单点故障。</p>
+<p>3、在场景3中，消息到达了消费者，RocketMQ在代码中就能保证消息不会丢失</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;注册消息监听器处理消息</span><br><span class="line">consumer.registerMessageListener(new MessageListenerConcurrently() &#123;</span><br><span class="line">   @Override</span><br><span class="line">    public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context)&#123;                                  </span><br><span class="line">        &#x2F;&#x2F;对消息进行处理</span><br><span class="line">        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>上面这段代码中，RocketMQ在消费者中注册了一个监听器，当消费者获取到了消息，就会去回调这个监听器函数，去处理里面的消息<br>当你的消息处理完毕之后，才会返回ConsumeConcurrentlyStatus.CONSUME_SUCCESS 只有返回了CONSUME_SUCCESS，消费者才会告诉RocketMQ我已经消费完了，此时如果消费者宕机，消息已经处理完了，也就不会丢失消息了<br>如果消费者还没有返回CONSUME_SUCCESS时就宕机了，那么RocketMQ就会认为你这个消费者节点挂掉了，会自动故障转移，将消息交给消费者组的其他消费者去消费这个消息，保证消息不会丢失<br>为了保证消息不会丢失，在consumeMessage方法中就直接写消息消费的业务逻辑就可以了，如果非要搞一些骚操作，比如下面的代码</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">&#x2F;&#x2F;注册消息监听器处理消息</span><br><span class="line">consumer.registerMessageListener(new MessageListenerConcurrently() &#123;</span><br><span class="line">   @Override</span><br><span class="line">    public ConsumeConcurrentlyStatus consumeMessage(List&lt;MessageExt&gt; msgs, ConsumeConcurrentlyContext context)&#123; </span><br><span class="line">     &#x2F;&#x2F;开启子线程异步处理消息</span><br><span class="line">     new Thread() &#123;</span><br><span class="line">   public void run() &#123;</span><br><span class="line">    &#x2F;&#x2F;对消息进行处理</span><br><span class="line">   &#125;</span><br><span class="line">  &#125;.start();                                 </span><br><span class="line">        return ConsumeConcurrentlyStatus.CONSUME_SUCCESS;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p>如果新开子线程异步处理消息的话，就有可能出现消息还没有被消费完，消费者告诉RocketMQ消息已经被消费了，结果宕机丢失消息的情况。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p>使用上面一整套的方案就可以在使用RocketMQ时保证消息零丢失，但是性能和吞吐量也将大幅下降</p>
+<ul>
+<li>使用事务机制传输消息，会比普通的消息传输多出很多步骤，耗费性能</li>
+<li>同步刷盘相比异步刷盘，一个是存储在磁盘中，一个存储在内存中，速度完全不是一个数量级</li>
+<li>主从机构的话，需要Leader将数据同步给Follower</li>
+<li>消费时无法异步消费，只能等待消费完成再通知RocketMQ消费完成<br>消息零丢失是一把双刃剑，要想用好，还是要视具体的业务场景而定，选择合适的方案才是最好的。</li>
+</ul>
+<h3 id="关注微信公众号，获取更多资源"><a href="#关注微信公众号，获取更多资源" class="headerlink" title="关注微信公众号，获取更多资源"></a>关注微信公众号，获取更多资源</h3>
+            <!-- <img  
+                     lazyload
+                     alt="image"
+                     data-src="https://img.mynamecoder.com/coderxm_qrcode.jpeg"
+                      width="200" height="200"  align="center" 
+                > -->
+                <img src="https://ts4.cn.mm.bing.net/th?id=OIP-C.9ZzGMplhZnF_mTJnPQT1HAHaDn&w=350&h=170&c=8&rs=1&qlt=90&o=6&dpr=1.3&pid=3.1&rm=2">
+            </div>
+
+            
+                <div class="post-copyright-info">
+                    
+<div class="article-copyright-info-container">
+    <ul class="copyright-info-content">
+        <li class="post-title">
+            <span class="type">本文标题</span>：<span class="content">RocketMQ消息丢失场景及解决办法</span>
+        </li>
+        <li class="post-author">
+            <span class="type">本文作者</span>：<span class="content">小明</span>
+        </li>
+        <li class="post-time">
+            <span class="type">创建时间</span>：<span class="content">2023-05-30 11:22:10</span>
+        </li>
+        <li class="post-link">
+            <span class="type">本文链接</span>：<span class="content">p/21838.html</span>
+        </li>
+        <li class="post-license">
+            <span class="type">版权声明</span>：<span class="content">本博客所有文章除特别声明外，均采用 <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh">BY-NC-SA</a> 许可协议。转载请注明出处！</span>
+        </li>
+    </ul>
+    <div class="copy-copyright-info flex-center tooltip" data-content="复制版权信息" data-offset-y="-2px">
+        <i class="fa-solid fa-copy"></i>
+    </div>
+</div>
+
+                </div>
+            
+
+            
+                <ul class="post-tags-box">
+                    
+                        <li class="tag-item">
+                            <a href="/tags/Java/">#Java</a>&nbsp;
+                        </li>
+                    
+                        <li class="tag-item">
+                            <a href="/tags/RocketMQ/">#RocketMQ</a>&nbsp;
+                        </li>
+                    
+                </ul>
+            
+
+            
+                <div class="article-nav">
+                    
+                        <div class="article-prev">
+                            <a class="prev"
+                               rel="prev"
+                               href="/p/59086.html"
+                            >
+                            <span class="left arrow-icon flex-center">
+                              <i class="fas fa-chevron-left"></i>
+                            </span>
+                                <span class="title flex-center">
+                                <span class="post-nav-title-item">RocketMQ分布式事务原理</span>
+                                <span class="post-nav-item">上一篇</span>
+                            </span>
+                            </a>
+                        </div>
+                    
+                    
+                        <div class="article-next">
+                            <a class="next"
+                               rel="next"
+                               href="/p/26485.html"
+                            >
+                            <span class="title flex-center">
+                                <span class="post-nav-title-item">Mysql：用覆盖索引解决回表查询</span>
+                                <span class="post-nav-item">下一篇</span>
+                            </span>
+                                <span class="right arrow-icon flex-center">
+                              <i class="fas fa-chevron-right"></i>
+                            </span>
+                            </a>
+                        </div>
+                    
+                </div>
+            
+
+            
+                <div class="comment-container">
+                    
+<div class="comments-container">
+    <div id="comments-anchor"></div>
+    <div class="comment-area-title">
+        <i class="fas fa-comments">🎊</i>&nbsp;评论
+    </div>
+    
+        
+            
+
+    <div class="valine-container">
+        <script data-pjax src="//cdn.jsdelivr.net/npm/valine@latest/dist/Valine.min.js"></script>
+        <div id="vcomments"></div>
+        <script data-pjax>
+          function loadValine() {
+
+            const config = {
+              el: '#vcomments',
+              appId: 'RYD6fM3F1jQ4aTSXOzbclYi6-9Nh9j0Va',
+              appKey: 'mjF7jJLYlbIcPU2mUOoh0I88',
+              meta: ['nick', 'mail', 'link'],
+              avatar: 'wavatar',
+              enableQQ: true,
+              placeholder: '说点什么',
+              lang: 'zh-CN'.toLowerCase()
+            }
+
+            if ('') {
+              config.serverURLs = ''
+            }
+
+            new Valine(config)
+
+            function getAuthor(language) {
+              switch (language) {
+                case 'en':
+                  return 'Author'
+                case 'zh-CN':
+                  return '博主'
+                default:
+                  return 'Master'
+              }
+            }
+
+            // Add "Author" identify
+            const getValineDomTimer = setInterval(() => {
+              const vcards = document.querySelectorAll('#vcomments .vcards .vcard')
+              if (vcards.length > 0) {
+                let author = '小明'
+
+                if (author) {
+                  for (let vcard of vcards) {
+                    const vnick_dom = vcard.querySelector('.vhead .vnick')
+                    const vnick = vnick_dom.innerHTML
+                    if (vnick === author) {
+                      vnick_dom.innerHTML = `${vnick} <span class="author">${getAuthor(KEEP.hexo_config.language)}</span>`
+                    }
+                  }
+                }
+                clearInterval(getValineDomTimer)
+              } else {
+                clearInterval(getValineDomTimer)
+              }
+            }, 2000)
+          }
+
+          if ('true' === 'true') {
+            const loadValineTimeout = setTimeout(() => {
+              loadValine()
+              clearTimeout(loadValineTimeout)
+            }, 1000)
+          } else {
+            window.addEventListener('DOMContentLoaded', loadValine)
+          }
+        </script>
+    </div>
+
+
+
+        
+    
+</div>
+
+                </div>
+            
+        </div>
+
+        
+            <div class="toc-content-container">
+                <div class="post-toc-wrap">
+    <div class="post-toc">
+        <ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%9C%BA%E6%99%AF%E5%88%86%E6%9E%90"><span class="nav-text">场景分析</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%A7%A3%E5%86%B3%E6%96%B9%E6%A1%88"><span class="nav-text">解决方案</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%80%BB%E7%BB%93"><span class="nav-text">总结</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%85%B3%E6%B3%A8%E5%BE%AE%E4%BF%A1%E5%85%AC%E4%BC%97%E5%8F%B7%EF%BC%8C%E8%8E%B7%E5%8F%96%E6%9B%B4%E5%A4%9A%E8%B5%84%E6%BA%90"><span class="nav-text">关注微信公众号，获取更多资源</span></a></li></ol></li></ol>
+    </div>
+</div>
+
+            </div>
+        
+    </div>
+</div>
+
+
+                
+            </div>
+
+        </div>
+
+        <div class="page-main-content-bottom">
+            
+<footer class="footer">
+    <div class="info-container">
+        <div class="copyright-info info-item">
+            &copy;
+            
+                <span>2018</span> -
+            
+            2023
+            
+                &nbsp;<i class="fas fa-heart icon-animate">💚</i>
+                &nbsp;<a href="/">小明</a>
+            
+        </div>
+        
+            <script async data-pjax
+                    src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <div class="website-count info-item">
+                
+                    访问人数&nbsp;<span id="busuanzi_value_site_uv"></span>&ensp;
+                
+                
+                    总访问量&nbsp;<span id="busuanzi_value_site_pv"></span>
+                
+            </div>
+        
+        <div class="theme-info info-item">
+            由 <a target="_blank" href="https://hexo.io">Hexo</a> 驱动&nbsp;|&nbsp;主题&nbsp;<a class="theme-version" target="_blank" href="https://github.com/XPoet/hexo-theme-keep">Keep v3.6.1</a>
+        </div>
+        
+            <div class="icp-info info-item">
+                <a target="_blank" rel="nofollow"
+                   href="https://beian.miit.gov.cn"
+                >
+                    京ICP备19029015号-1
+                </a>
+            </div>
+        
+        
+    </div>
+</footer>
+
+        </div>
+    </div>
+
+    
+        <div class="post-tools">
+            <div class="post-tools-container">
+    <ul class="tools-list">
+        <!-- TOC aside toggle -->
+        
+            <li class="tools-item flex-center toggle-show-toc">
+                <i class="fas fa-list"></i>
+            </li>
+        
+
+        <!-- go comment -->
+        
+            <li class="tools-item flex-center go-to-comments">
+                <i class="fas fa-comment"></i>
+                <span class="post-comments-count"></span>
+            </li>
+        
+    </ul>
+</div>
+
+        </div>
+    
+
+    <div class="right-bottom-side-tools">
+        <div class="side-tools-container">
+    <ul class="side-tools-list">
+        <li class="tools-item tool-font-adjust-plus flex-center">
+            <i class="fas fa-search-plus"></i>
+        </li>
+
+        <li class="tools-item tool-font-adjust-minus flex-center">
+            <i class="fas fa-search-minus"></i>
+        </li>
+
+        <li class="tools-item tool-dark-light-toggle flex-center">
+            <i class="fas fa-moon"></i>
+        </li>
+
+        <!-- rss -->
+        
+            <li class="tools-item rss flex-center">
+                <a class="flex-center"
+                   href="/atom.xml"
+                   target="_blank"
+                >
+                    <i class="fas fa-rss"></i>
+                </a>
+            </li>
+        
+
+        
+            <li class="tools-item tool-scroll-to-top flex-center">
+                <i class="fas fa-arrow-up"></i>
+            </li>
+        
+
+        <li class="tools-item tool-scroll-to-bottom flex-center">
+            <i class="fas fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="exposed-tools-list">
+        <li class="tools-item tool-toggle-show flex-center">
+            <i class="fas fa-cog fa-spin">🤖</i>
+        </li>
+        
+    </ul>
+</div>
+
+    </div>
+
+    <div class="zoom-in-image-mask">
+    <img class="zoom-in-image">
+</div>
+
+
+    
+        <div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fas fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="搜索..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="close-popup-btn">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fas fa-spinner fa-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+    
+
+</main>
+
+
+
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/main.js"></script>
+
+<script src="/js/header-shrink.js"></script>
+
+<script src="/js/back2top.js"></script>
+
+<script src="/js/dark-light-toggle.js"></script>
+
+
+
+
+
+    
+<script src="/js/local-search.js"></script>
+
+
+
+
+
+
+    
+<script src="/js/lazyload.js"></script>
+
+
+
+<div class="post-scripts pjax">
+    
+        
+<script src="/js/post-helper.js"></script>
+
+        
+            
+<script src="/js/libs/anime.min.js"></script>
+<script src="/js/toc.js"></script>
+
+        
+    
+</div>
+
+
+    
+<script src="/js/libs/pjax.min.js"></script>
+
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax'
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+            // scrollTo: true,
+        });
+
+        document.addEventListener('pjax:send', () => {
+            KEEP.utils.pjaxProgressBarStart();
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            KEEP.utils.pjaxProgressBarEnd();
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'));
+            KEEP.refresh();
+        });
+    });
+</script>
+
+
+
+</body>
+</html>

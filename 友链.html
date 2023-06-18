@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="keywords" content="程序员小明 | Java | Spring Boot | Spring Cloud | ElasticSearch |日常开发 |最新干货分享">
+    <meta name="description" content="Spring Boot, Spring Cloud,日常开发, ElasticSearch, 微服务, 并发编程, 源码分析,Java,程序员小明">
+    <meta name="author" content="小明">
+    
+    <title>
+        
+            友链 |
+        
+        程序员小明
+    </title>
+    
+<link rel="stylesheet" href="./pigeonhole.css">
+<!-- <link rel="shortcut icon" href="/images/logo.svg"> -->
+<link rel="stylesheet" href="./pigeonhole1.css">
+<link rel="stylesheet" href="./pigeonhole2.css">
+<link rel="stylesheet" href="./pigeonhole3.css">
+<link rel="stylesheet" href="./pigeonhole4.css">
+
+    <script id="hexo-configurations">
+    let KEEP = window.KEEP || {}
+    KEEP.hexo_config = {"hostname":"mynamecoder.com","root":"/","language":"zh-CN","path":"search.xml"}
+    KEEP.theme_config = {"toc":{"enable":true,"number":false,"expand_all":false,"init_open":false},"style":{"primary_color":"#0066cc","logo":null,"favicon":"/images/logo.svg","avatar":"/images/avatar.png","font_size":null,"font_family":"Optima-Regular,PingFangTC-light","hover":{"shadow":true,"scale":true},"first_screen":{"enable":false,"header_transparent":true,"background_img":"https://img.mynamecoder.com/20230224112801.jpeg","description":"||","font_color":"","hitokoto":true},"scroll":{"progress_bar":false,"percent":false}},"local_search":{"enable":true,"preload":true},"code_copy":{},"code_block":{"tools":{"enable":false,"style":"default"},"highlight_theme":"default"},"side_tools":{},"pjax":{"enable":true},"lazyload":{"enable":true},"comment":{"enable":true,"use":"valine","valine":{"appid":"RYD6fM3F1jQ4aTSXOzbclYi6-9Nh9j0Va","appkey":"mjF7jJLYlbIcPU2mUOoh0I88","server_urls":null,"meta":["nick","mail","link"],"placeholder":"说点什么"},"gitalk":{"github_id":null,"github_admins":null,"repository":null,"client_id":null,"client_secret":null,"proxy":null},"twikoo":{"env_id":null,"region":null,"version":"1.6.8"},"waline":{"server_url":null,"reaction":false,"version":2}},"post":{"author_label":{"enable":true,"auto":true,"custom_label_list":["Trainee","Engineer","Architect"]},"word_count":{"enable":true,"wordcount":false,"min2read":false},"img_align":"left","copyright_info":true},"version":"3.6.1"}
+    KEEP.language_ago = {"second":"%s 秒前","minute":"%s 分钟前","hour":"%s 小时前","day":"%s 天前","week":"%s 周前","month":"%s 个月前","year":"%s 年前"}
+    KEEP.language_code_block = {"copy":"复制代码","copied":"已复制","fold":"折叠代码块","folded":"已折叠"}
+    KEEP.language_copy_copyright = {"copy":"复制版权信息","copied":"已复制","title":"原文标题","author":"原文作者","link":"原文链接"}
+  </script>
+    <!-- <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1566816837076058"
+     crossorigin="anonymous"></script>
+    <script async src="/live2d-widget/autoload.js"></script>
+<meta name="generator" content="Hexo 5.4.2"><link rel="alternate" href="/atom.xml" title="程序员小明 | Java | Spring Boot | Spring Cloud | ElasticSearch |日常开发 |最新干货分享" type="application/atom+xml"> -->
+</head>
+
+<body>
+<div class="progress-bar-container">
+ <span class="pjax-progress-bar"></span>
+        <i class="pjax-progress-icon fas fa-circle-notch fa-spin"></i>
+</div>
+<main class="page-container">
+<div class="page-main-content">
+
+        <div class="page-main-content-top">
+            
+<header class="header-wrapper">
+
+    <div class="header-content">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+               程序员小明
+            </a>
+        </div>
+
+        <div class="right">
+            <div class="pc">
+                <ul class="menu-list">
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./首页.html"
+                            >
+                                首页
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./归档.html"
+                            >
+                                归档
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./标签.html"
+                            >
+                                标签
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class="active"
+                               href="./友链.html"
+                            >
+                                友链
+                            </a>
+                        </li>
+                    
+                        <li class="menu-item">
+                            <a class=""
+                               href="./关于.html"
+                            >
+                                关于
+                            </a>
+                        </li>
+                    
+                    
+                        <li class="menu-item">
+                            <a class="" href="/about">添加 </a>
+                          </li>
+                        <li class="menu-item search search-popup-trigger">
+                          <i>🔍</i>
+                    
+                </ul>
+            </div>
+            <div class="mobile">
+                
+                    <div class="icon-item search search-popup-trigger"><i class="fas fa-search"></i></div>
+                
+                <div class="icon-item menu-bar">
+                    <div class="menu-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="header-drawer">
+        <ul class="drawer-menu-list">
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./首页.html">首页</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./归档.html">归档</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./标签.html">标签</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class="active"
+                       href="./友链.html">友链</a>
+                </li>
+            
+                <li class="drawer-menu-item flex-center">
+                    <a class=""
+                       href="./关于.html">关于</a>
+                </li>
+               
+            
+        </ul>
+    </div>
+
+    <div class="window-mask"></div>
+</header>
+</div>
+<div class="page-main-content-middle">
+            <div class="main-content">         
+<div class="fade-in-down-animation">
+    <div class="page-template-container">
+    <div class="friends-link-container">
+    <ul class="friends-link-list">
+            <li class="friends-link-item">
+                <a target="_blank" rel="noopener" href="https://xpoet.cn/">
+                    <div class="content">
+                        <div class="avatar radius">
+                            
+                                <img class="radius"
+                                     src="https://cdn.staticaly.com/gh/XPoet/image-hosting@master/common-use/avatar.jpg"
+                                     onerror="this.style.display='none'">
+                            </div>
+                        <div class="info">
+                            <div class="name ellipsis">XPoet</div>
+                            <div class="description ellipsis">懒惰是程序员第一生产力</div>
+                        </div>
+                    </div>
+                </a>
+            </li>
+        
+    </ul>
+    <div class="clear"></div>
+</div>
+ <div class="page-template-content keep-markdown-body">
+            
+                <p>交个朋友！🤝<br>若要交换友链，请先将本站链接添加到你的网站，然后按下列&lt;&lt;示例格式&gt;&gt;留言：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">name:</span> <span class="string">程序员小明</span></span><br><span class="line"><span class="attr">link:</span> <span class="string">https://mynamecoder.com</span></span><br><span class="line"><span class="attr">description:</span> <span class="string">一个很少加班的程序员</span></span><br><span class="line"><span class="attr">avatar:</span> <span class="string">https://mynamecoder.com/images/avatar.png</span></span><br></pre></td></tr></table></figure>
+<blockquote>
+<p>注意：博主将不定期清理已失效的友链，如被误删，下方留言即可。</p>
+</blockquote>
+ </div>
+        
+            <div class="page-template-comments">       
+<div class="comments-container">
+    <div id="comments-anchor"></div>
+    <div class="comment-area-title">
+        <i class="fas fa-comments">🎊</i>&nbsp;评论
+    </div>
+<div class="valine-container">
+        <script data-pjax src="//cdn.jsdelivr.net/npm/valine@latest/dist/Valine.min.js"></script>
+        <div id="vcomments"></div>
+        <script data-pjax>
+          function loadValine() {
+
+            const config = {
+              el: '#vcomments',
+              appId: 'RYD6fM3F1jQ4aTSXOzbclYi6-9Nh9j0Va',
+              appKey: 'mjF7jJLYlbIcPU2mUOoh0I88',
+              meta: ['nick', 'mail', 'link'],
+              avatar: 'wavatar',
+              enableQQ: true,
+              placeholder: '说点什么',
+              lang: 'zh-CN'.toLowerCase()
+            }
+
+            if ('') {
+              config.serverURLs = ''
+            }
+
+            new Valine(config)
+
+            function getAuthor(language) {
+              switch (language) {
+                case 'en':
+                  return 'Author'
+                case 'zh-CN':
+                  return '博主'
+                default:
+                  return 'Master'
+              }
+            }
+            const getValineDomTimer = setInterval(() => {
+              const vcards = document.querySelectorAll('#vcomments .vcards .vcard')
+              if (vcards.length > 0) {
+                let author = '小明'
+
+                if (author) {
+                  for (let vcard of vcards) {
+                    const vnick_dom = vcard.querySelector('.vhead .vnick')
+                    const vnick = vnick_dom.innerHTML
+                    if (vnick === author) {
+                      vnick_dom.innerHTML = `${vnick} <span class="author">${getAuthor(KEEP.hexo_config.language)}</span>`
+                    }
+                  }
+                }
+                clearInterval(getValineDomTimer)
+              } else {
+                clearInterval(getValineDomTimer)
+              }
+            }, 2000)
+          }
+
+          if ('true' === 'true') {
+            const loadValineTimeout = setTimeout(() => {
+              loadValine()
+              clearTimeout(loadValineTimeout)
+            }, 1000)
+          } else {
+            window.addEventListener('DOMContentLoaded', loadValine)
+          }
+        </script>
+    </div>   
+</div>
+            </div>
+    </div>
+</div>
+</div>
+</div>
+        <div class="page-main-content-bottom">           
+<footer class="footer">
+    <div class="info-container">
+        <div class="copyright-info info-item">
+            &copy;
+  <span>2018</span> - 2023
+     &nbsp;<i class="fas fa-heart icon-animate">💚</i>
+                &nbsp;<a href="/">小明</a>
+        </div>
+            <script async data-pjax
+                    src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
+            <div class="website-count info-item">
+                
+                    访问人数&nbsp;<span id="busuanzi_value_site_uv"></span>&ensp;
+                
+                
+                    总访问量&nbsp;<span id="busuanzi_value_site_pv"></span>
+                </div>
+ <div class="theme-info info-item">
+            由 <a target="_blank" href="https://hexo.io">Hexo</a> 驱动&nbsp;|&nbsp;主题&nbsp;<a class="theme-version" target="_blank" href="https://github.com/XPoet/hexo-theme-keep">Keep v3.6.1</a>
+        </div>
+        
+            <div class="icp-info info-item">
+                <a target="_blank" rel="nofollow"
+                   href="https://beian.miit.gov.cn"
+                >
+                    京ICP备19029015号-1
+                </a>
+            </div>
+</div>
+</footer>
+</div>
+    </div>
+<div class="right-bottom-side-tools">
+        <div class="side-tools-container">
+    <ul class="side-tools-list">
+        <li class="tools-item tool-font-adjust-plus flex-center">
+            <i class="fas fa-search-plus"></i>
+        </li>
+
+        <li class="tools-item tool-font-adjust-minus flex-center">
+            <i class="fas fa-search-minus"></i>
+        </li>
+<li class="tools-item tool-dark-light-toggle flex-center">
+            <i class="fas fa-moon"></i>
+        </li>
+ <li class="tools-item rss flex-center">
+                <a class="flex-center"
+                   href="/atom.xml"
+                   target="_blank"
+                >
+                    <i class="fas fa-rss"></i>
+                </a>
+            </li>
+  <li class="tools-item tool-scroll-to-top flex-center">
+                <i class="fas fa-arrow-up"></i>
+            </li>
+        <li class="tools-item tool-scroll-to-bottom flex-center">
+            <i class="fas fa-arrow-down"></i>
+        </li>
+    </ul>
+
+    <ul class="exposed-tools-list">
+        <li class="tools-item tool-toggle-show flex-center">
+            <i class="fas fa-cog fa-spin">🤖</i>
+        </li>
+        
+    </ul>
+</div>
+</div>
+<div class="zoom-in-image-mask">
+    <img class="zoom-in-image">
+</div>
+<div class="search-pop-overlay">
+    <div class="popup search-popup">
+        <div class="search-header">
+          <span class="search-input-field-pre">
+            <i class="fas fa-keyboard"></i>
+          </span>
+            <div class="search-input-container">
+                <input autocomplete="off"
+                       autocorrect="off"
+                       autocapitalize="off"
+                       placeholder="搜索..."
+                       spellcheck="false"
+                       type="search"
+                       class="search-input"
+                >
+            </div>
+            <span class="close-popup-btn">
+                <i class="fas fa-times"></i>
+            </span>
+        </div>
+        <div id="search-result">
+            <div id="no-result">
+                <i class="fas fa-spinner fa-pulse fa-5x fa-fw"></i>
+            </div>
+        </div>
+    </div>
+</div>
+</main>
+<script src="/js/utils.js"></script>
+<script src="/js/main.js"></script>
+<script src="/js/header-shrink.js"></script>
+<script src="/js/back2top.js"></script>
+<script src="/js/dark-light-toggle.js"></script>
+<script src="/js/local-search.js"></script>
+<script src="/js/lazyload.js"></script>
+<div class="post-scripts pjax">
+    </div>
+<script src="/js/libs/pjax.min.js"></script>
+<script>
+    window.addEventListener('DOMContentLoaded', () => {
+        window.pjax = new Pjax({
+            selectors: [
+                'head title',
+                '.page-container',
+                '.pjax'
+            ],
+            history: true,
+            debug: false,
+            cacheBust: false,
+            timeout: 0,
+            analytics: false,
+            currentUrlFullReload: false,
+            scrollRestoration: false,
+        });
+ document.addEventListener('pjax:send', () => {
+            KEEP.utils.pjaxProgressBarStart();
+        });
+
+        document.addEventListener('pjax:complete', () => {
+            KEEP.utils.pjaxProgressBarEnd();
+            window.pjax.executeScripts(document.querySelectorAll('script[data-pjax], .pjax script'));
+            KEEP.refresh();
+        });
+    });
+</script>
+</body>
+</html>
